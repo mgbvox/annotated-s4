@@ -1,3 +1,23 @@
+[tool.poetry]
+name = "annotated-s4"
+version = "0.1.0"
+description = ""
+authors = ["Matthew Billman <mgbvox@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
 [tool.black]
 line-length = 80
 max-line-length = 80
