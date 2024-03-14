@@ -42,7 +42,7 @@ from flax import linen as nn
 from jax.nn.initializers import lecun_normal, normal
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rng = jax.random.PRNGKey(1)
 
 # ## Table of Contents
@@ -290,6 +290,7 @@ if __name__ == '__main__':
 
 # More importantly, implementing the DSS kernel is *very* straightforward:
 
+
 def complex_softmax(x, eps=1e-7):
     def reciprocal(x):
         return x.conj() / (x * x.conj() + eps)
@@ -432,11 +433,20 @@ class DSSLayer(nn.Module):
 
     def setup(self):
         # Learned Parameters
-        hippo_Lambda_real_initializer, hippo_Lambda_imag_initializer, hippo_p_initializer, hippo_B_initializer = s4.hippo_initializer(self.N)
-        self.Lambda_re = self.param("Lambda_re", hippo_Lambda_real_initializer, (self.N,))
-        self.Lambda_im = self.param("Lambda_im", hippo_Lambda_imag_initializer, (self.N,))
-        self.Lambda = self.Lambda_re + 1j*self.Lambda_im
-        self.W = self.param("W", normal(stddev=.5**.5), (1, self.N, 2))
+        (
+            hippo_Lambda_real_initializer,
+            hippo_Lambda_imag_initializer,
+            hippo_p_initializer,
+            hippo_B_initializer,
+        ) = s4.hippo_initializer(self.N)
+        self.Lambda_re = self.param(
+            "Lambda_re", hippo_Lambda_real_initializer, (self.N,)
+        )
+        self.Lambda_im = self.param(
+            "Lambda_im", hippo_Lambda_imag_initializer, (self.N,)
+        )
+        self.Lambda = self.Lambda_re + 1j * self.Lambda_im
+        self.W = self.param("W", normal(stddev=0.5**0.5), (1, self.N, 2))
         self.W = self.W[..., 0] + 1j * self.W[..., 1]
         self.D = self.param("D", nn.initializers.ones, (1,))
         self.step = np.exp(
@@ -448,6 +458,7 @@ class DSSLayer(nn.Module):
             # FLAX code to ensure that we only compute discrete once during decoding.
             def init_discrete():
                 return dss_ssm(self.W, self.Lambda, self.l_max, self.step)
+
             ssm_var = self.variable("prime", "ssm", init_discrete)
             if self.is_mutable_collection("prime"):
                 ssm_var.value = init_discrete()
@@ -462,10 +473,13 @@ class DSSLayer(nn.Module):
         if not self.decode:
             return s4.causal_convolution(u, self.K) + self.D * u
         else:
-            x_k, y_s = s4.scan_SSM(*self.ssm, u[:, np.newaxis], self.x_k_1.value)
+            x_k, y_s = s4.scan_SSM(
+                *self.ssm, u[:, np.newaxis], self.x_k_1.value
+            )
             if self.is_mutable_collection("cache"):
                 self.x_k_1.value = x_k
             return y_s.reshape(-1).real + self.D * u
+
 
 DSSLayer = s4.cloneLayer(DSSLayer)
 

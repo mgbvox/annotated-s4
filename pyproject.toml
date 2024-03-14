@@ -4,14 +4,28 @@ version = "0.1.0"
 description = ""
 authors = ["Matthew Billman <mgbvox@gmail.com>"]
 readme = "README.md"
+packages = [{"include"="s4"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+jupyter = "^1.0.0"
+jax-metal = "^0.0.6"
+flax = "^0.8.2"
+torch = "^2.2.1"
+torchtext = "^0.17.1"
+torchaudio = "^2.2.1"
+torchvision = "^0.17.1"
+jupytext = "^1.16.1"
+matplotlib = "^3.8.3"
+seaborn = "^0.13.2"
+celluloid = "^0.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.2.0"
 isort = "^5.13.2"
+pytest = "^8.1.1"
+coverage = "^7.4.3"
 
 [build-system]
 requires = ["poetry-core"]

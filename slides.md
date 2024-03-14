@@ -44,7 +44,7 @@ Based on research by Albert Gu, Karan Goel, and Christopher Ré.
 - Professor at Cornell / Researcher at Hugging Face
 - Open source projects
 
-   - [Named Tensors](https://nlp.seas.harvard.edu/NamedTensor), [Annotated Transformer](https://nlp.seas.harvard.edu/2018/04/03/attention.html), [Miniconf](https://github.com/Mini-Conf/Mini-Conf), [MiniTorch](https://minitorch.github.io/)
+  - [Named Tensors](https://nlp.seas.harvard.edu/NamedTensor), [Annotated Transformer](https://nlp.seas.harvard.edu/2018/04/03/attention.html), [Miniconf](https://github.com/Mini-Conf/Mini-Conf), [MiniTorch](https://minitorch.github.io/)
 
 
 ---
@@ -55,9 +55,9 @@ Based on research by Albert Gu, Karan Goel, and Christopher Ré.
 Caveat: Not a research talk, there will be bugs 🧑‍🔬
 
 
-* 
-   1. Learn about a new ML architecture. 
-   2. Understand how JAX supports it.
+*
+  1. Learn about a new ML architecture.
+  2. Understand how JAX supports it.
 
 ---
 
@@ -66,7 +66,7 @@ Caveat: Not a research talk, there will be bugs 🧑‍🔬
 
 ### Cons
 
-* 
+*
   - Debugging is still hard
   - No NN standard
   - Hard to reason about (for me)
@@ -86,7 +86,7 @@ Caveat: Not a research talk, there will be bugs 🧑‍🔬
 
 ## Sequence Modeling
 
-Birds-Eye: Learning over a list of elements (discrete or sampled signal) 
+Birds-Eye: Learning over a list of elements (discrete or sampled signal)
 
 * Classification
 
@@ -116,7 +116,7 @@ Birds-Eye: Learning over a list of elements (discrete or sampled signal)
 
 ---
 
-## The Transformer Weakness 
+## The Transformer Weakness
 
 
 ![height:300px](https://miro.medium.com/max/1400/1*YmND0Qj8O6b35J1yU_CPKQ.png)
@@ -221,13 +221,13 @@ Albert Gu, Karan Goel, and Christopher Ré.
 ## State Space Models (SSM)
 
 - A [state space model](https://en.wikipedia.org/wiki/State-space_representation) maps a 1-D input signal $u(t)$ to an $N$-D latent state $x(t)$
-before projecting to a 1-D output signal $y(t)$.
+  before projecting to a 1-D output signal $y(t)$.
 
 $$
-  \begin{aligned}
-    x'(t) &= \boldsymbol{A}x(t) + \boldsymbol{B}u(t) \\
-    y(t) &= \boldsymbol{C}x(t)\\
-  \end{aligned}
+\begin{aligned}
+x'(t) &= \boldsymbol{A}x(t) + \boldsymbol{B}u(t) \\
+y(t) &= \boldsymbol{C}x(t)\\
+\end{aligned}
 $$
 
 - $\boldsymbol{A}$, $\boldsymbol{B}$, $\boldsymbol{C}$ are parameters; $u$ input, $y$ output, $x$ state
@@ -235,11 +235,11 @@ $$
 
 ```python
 def random_SSM(rng, N):
-    a_r, b_r, c_r = jax.random.split(rng, 3)
-    A = jax.random.uniform(a_r, (N, N))
-    B = jax.random.uniform(b_r, (N, 1))
-    C = jax.random.uniform(c_r, (1, N))
-    return A, B, C
+  a_r, b_r, c_r = jax.random.split(rng, 3)
+  A = jax.random.uniform(a_r, (N, N))
+  B = jax.random.uniform(b_r, (N, 1))
+  C = jax.random.uniform(c_r, (1, N))
+  return A, B, C
 ```
 
 ---
@@ -252,20 +252,20 @@ def random_SSM(rng, N):
 
 $$
 \begin{aligned}
-  \boldsymbol{\overline{A}} &= (\boldsymbol{I} - \Delta/2 \cdot \boldsymbol{A})^{-1}(\boldsymbol{I} + \Delta/2 \cdot \boldsymbol{A}) \\
-  \boldsymbol{\overline{B}} &= (\boldsymbol{I} - \Delta/2 \cdot \boldsymbol{A})^{-1} \Delta \boldsymbol{B} \\
-  \boldsymbol{\overline{C}} &= \boldsymbol{C}\\
+\boldsymbol{\overline{A}} &= (\boldsymbol{I} - \Delta/2 \cdot \boldsymbol{A})^{-1}(\boldsymbol{I} + \Delta/2 \cdot \boldsymbol{A}) \\
+\boldsymbol{\overline{B}} &= (\boldsymbol{I} - \Delta/2 \cdot \boldsymbol{A})^{-1} \Delta \boldsymbol{B} \\
+\boldsymbol{\overline{C}} &= \boldsymbol{C}\\
 \end{aligned}
 $$
 
 
 ```python
 def discretize(A, B, C, step):
-    I = np.eye(A.shape[0])
-    BL = inv(I - (step / 2.0) * A)
-    Ab = BL @ (I + (step / 2.0) * A)
-    Bb = (BL * step) @ B
-    return Ab, Bb, C
+  I = np.eye(A.shape[0])
+  BL = inv(I - (step / 2.0) * A)
+  Ab = BL @ (I + (step / 2.0) * A)
+  Bb = (BL * step) @ B
+  return Ab, Bb, C
 ```
 
 
@@ -278,8 +278,8 @@ def discretize(A, B, C, step):
 
 $$
 \begin{aligned}
-  x_{k} &= \boldsymbol{\overline{A}} x_{k-1} + \boldsymbol{\overline{B}} u_k\\
-  y_k &= \boldsymbol{\overline{C}} x_k \\
+x_{k} &= \boldsymbol{\overline{A}} x_{k-1} + \boldsymbol{\overline{B}} u_k\\
+y_k &= \boldsymbol{\overline{C}} x_k \\
 \end{aligned}
 $$
 
@@ -288,12 +288,12 @@ $$
 
 ```python
 def scan_SSM(Ab, Bb, Cb, u, x0):
-    def step(x_k_1, u_k):
-        x_k = Ab @ x_k_1 + Bb @ u_k
-        y_k = Cb @ x_k
-        return x_k, y_k
+  def step(x_k_1, u_k):
+    x_k = Ab @ x_k_1 + Bb @ u_k
+    y_k = Cb @ x_k
+    return x_k, y_k
 
-    return jax.lax.scan(step, x0, u)
+  return jax.lax.scan(step, x0, u)
 ```
 
 
@@ -336,10 +336,10 @@ $$
 
 ```python
 def example_mass(k, b, m):
-    A = np.array([[0, 1], [-k / m, -b / m]])
-    B = np.array([[0], [1.0 / m]])
-    C = np.array([[1.0, 0]])
-    return A, B, C
+  A = np.array([[0, 1], [-k / m, -b / m]])
+  B = np.array([[0], [1.0 / m]])
+  C = np.array([[1.0, 0]])
+  return A, B, C
 ```
 
 ---
@@ -350,19 +350,19 @@ def example_mass(k, b, m):
 ```python
 @partial(np.vectorize, signature="()->()")
 def example_force(t):
-    x = np.sin(10 * t)
-    return x * (x > 0.5)
+  x = np.sin(10 * t)
+  return x * (x > 0.5)
 ```
 
 ```python
 def example_ssm(L=100):
-    ssm = example_mass(k=40, b=5, m=1)
+  ssm = example_mass(k=40, b=5, m=1)
 
-    # L samples of u(t).
-    step = 1.0 / L
-    ks = np.arange(L)
-    u = example_force(ks * step)
-    y = scan_SSM(*ssm, u)
+  # L samples of u(t).
+  step = 1.0 / L
+  ks = np.arange(L)
+  u = example_force(ks * step)
+  y = scan_SSM(*ssm, u)
 ```
 
 ---
@@ -394,22 +394,22 @@ def example_ssm(L=100):
 
 $$
 \begin{aligned}
-  x_{k} &= \boldsymbol{\overline{A}} x_{k-1} + \boldsymbol{\overline{B}} u_k\\
-  y_k &= \boldsymbol{\overline{C}} x_k \\
+x_{k} &= \boldsymbol{\overline{A}} x_{k-1} + \boldsymbol{\overline{B}} u_k\\
+y_k &= \boldsymbol{\overline{C}} x_k \\
 \end{aligned}
 $$
 
 
 $$
 \begin{aligned}
-  x_0 &= \boldsymbol{\overline{B}} u_0 &
-  x_1 &= \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{B}} u_1 &
-  x_2 &= \boldsymbol{\overline{A}}^2 \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_1 + \boldsymbol{\overline{B}} u_2 & \dots
-  \\
-  y_0 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_0 &
-  y_1 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_1 &
-  y_2 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^2 \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_1 + \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_2
-  & \dots
+x_0 &= \boldsymbol{\overline{B}} u_0 &
+x_1 &= \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{B}} u_1 &
+x_2 &= \boldsymbol{\overline{A}}^2 \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_1 + \boldsymbol{\overline{B}} u_2 & \dots
+\\
+y_0 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_0 &
+y_1 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_1 &
+y_2 &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^2 \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_1 + \boldsymbol{\overline{C}} \boldsymbol{\overline{B}} u_2
+& \dots
 \end{aligned}
 $$
 
@@ -421,23 +421,23 @@ $$
 
 $$
 \begin{aligned}
-    y_k &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^k \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^{k-1} \boldsymbol{\overline{B}} u_1 + \dots + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_{k-1} + \boldsymbol{\overline{C}}\boldsymbol{\overline{B}} u_k
-    \\
+y_k &= \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^k \boldsymbol{\overline{B}} u_0 + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^{k-1} \boldsymbol{\overline{B}} u_1 + \dots + \boldsymbol{\overline{C}} \boldsymbol{\overline{A}} \boldsymbol{\overline{B}} u_{k-1} + \boldsymbol{\overline{C}}\boldsymbol{\overline{B}} u_k
+\\
 \end{aligned}
 $$
 >
 $$
 \begin{aligned}
-  \boldsymbol{\overline{K}} \in \mathbb{R}^L  = (\boldsymbol{\overline{C}}\boldsymbol{\overline{B}}, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}\boldsymbol{\overline{B}}, \dots, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}^{L-1}\boldsymbol{\overline{B}})
+\boldsymbol{\overline{K}} \in \mathbb{R}^L  = (\boldsymbol{\overline{C}}\boldsymbol{\overline{B}}, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}\boldsymbol{\overline{B}}, \dots, \boldsymbol{\overline{C}}\boldsymbol{\overline{A}}^{L-1}\boldsymbol{\overline{B}})
 \end{aligned}
 $$
 
 
 ```python
 def K_conv(Ab, Bb, Cb, L):
-    return np.array(
-        [(Cb @ matrix_power(Ab, l) @ Bb).reshape() for l in range(L)]
-    )
+  return np.array(
+    [(Cb @ matrix_power(Ab, l) @ Bb).reshape() for l in range(L)]
+  )
 ```
 
 ---
@@ -453,12 +453,12 @@ $$
 
 ```python
 def non_circular_convolution(u, K, nofft=False):
-    if nofft:
-        return convolve(u, K, mode="full")[: u.shape[0]]
-    else:
-        ud = np.fft.rfft(np.pad(u, (0, K.shape[0])))
-        Kd = np.fft.rfft(np.pad(K, (0, u.shape[0])))
-        return np.fft.irfft(ud * Kd)[: u.shape[0]]
+  if nofft:
+    return convolve(u, K, mode="full")[: u.shape[0]]
+  else:
+    ud = np.fft.rfft(np.pad(u, (0, K.shape[0])))
+    Kd = np.fft.rfft(np.pad(K, (0, u.shape[0])))
+    return np.fft.irfft(ud * Kd)[: u.shape[0]]
 ```
 
 - $O(L \log L)$ training through FFT
@@ -472,15 +472,15 @@ def non_circular_convolution(u, K, nofft=False):
 
 ```python
 def make_HiPPO(N):
-    def v(n, k):
-        if n > k:
-            return np.sqrt(2 * n + 1) * np.sqrt(2 * k + 1)
-        elif n == k:
-            return n + 1
-        else:
-            return 0
-    mat = [[v(n, k) for k in range(1, N + 1)] for n in range(1, N + 1)]
-    return -np.array(mat)
+  def v(n, k):
+    if n > k:
+      return np.sqrt(2 * n + 1) * np.sqrt(2 * k + 1)
+    elif n == k:
+      return n + 1
+    else:
+      return 0
+  mat = [[v(n, k) for k in range(1, N + 1)] for n in range(1, N + 1)]
+  return -np.array(mat)
 ```
     
 ---
@@ -488,15 +488,15 @@ def make_HiPPO(N):
 ## HiPPO Intuition Sketch
 
 - Recall $x_k$ is an $N$-dimensional hidden representation of an $L$-step signal
-- HiPPO approximates state as $N$ Legendre coefficients representing $u$. 
+- HiPPO approximates state as $N$ Legendre coefficients representing $u$.
 
 ![h:300px](images/leg.png)
 
 ```python
 def example_legendre(N=8):
-    u = (np.random.rand(N) - 0.5) * 2
-    t = np.linspace(-1, 1, 100)
-    x = numpy.polynomial.legendre.Legendre(u)(t)
+  u = (np.random.rand(N) - 0.5) * 2
+  t = np.linspace(-1, 1, 100)
+  x = numpy.polynomial.legendre.Legendre(u)(t)
 ```
     
 ---
@@ -505,30 +505,30 @@ def example_legendre(N=8):
 
 - Everything is a modular testable function
 - So far - no parameter, batches, NN nonsense
-- In fact, mostly scalar modeling. 
+- In fact, mostly scalar modeling.
 
 ---
 
 ## SSM Network Layer
 
-- SSM layer with Flax (still scalar!) 
+- SSM layer with Flax (still scalar!)
 
 ```python
 class SSMLayer(nn.Module):
-    A: np.DeviceArray  # HiPPO
-    N, L: int
+  A: np.DeviceArray  # HiPPO
+  N, L: int
 
-    def setup(self):
-        self.B = self.param("B", lecun_normal(), (self.N, 1))
-        self.C = self.param("C", lecun_normal(), (1, self.N))
-        self.step = np.exp(self.param("log_step", log_step_initializer(), (1,)))
+  def setup(self):
+    self.B = self.param("B", lecun_normal(), (self.N, 1))
+    self.C = self.param("C", lecun_normal(), (1, self.N))
+    self.step = np.exp(self.param("log_step", log_step_initializer(), (1,)))
 
-        # Conv created each time during training
-        self.ssm = discretize(self.A, self.B, self.C, step=self.step)
-        self.K = K_conv(*self.ssm, self.L)
+    # Conv created each time during training
+    self.ssm = discretize(self.A, self.B, self.C, step=self.step)
+    self.K = K_conv(*self.ssm, self.L)
 
-    def __call__(self, u):
-        return non_circular_convolution(u, self.K) 
+  def __call__(self, u):
+    return non_circular_convolution(u, self.K) 
 ```
 
 ---
@@ -539,9 +539,9 @@ class SSMLayer(nn.Module):
 
 ```python
 nn.vmap(
-    layer, in_axes=1, out_axes=1,
-    variable_axes={"params": 1}, # New Params
-    split_rngs={"params": True},
+  layer, in_axes=1, out_axes=1,
+  variable_axes={"params": 1}, # New Params
+  split_rngs={"params": True},
 )
 ```
 
@@ -549,9 +549,9 @@ nn.vmap(
 
 ```python
 nn.vmap(
-    layer, in_axes=0, out_axes=0,
-    variable_axes={"params": None}, # Shared Params
-    split_rngs={"params": False},
+  layer, in_axes=0, out_axes=0,
+  variable_axes={"params": None}, # Shared Params
+  split_rngs={"params": False},
 )
 ```
 
@@ -566,21 +566,21 @@ nn.vmap(
 
 ```python
 class SSMRNNLayer(nn.Module):
-    A: np.DeviceArray  # HiPPO
-    N, L: int
+  A: np.DeviceArray  # HiPPO
+  N, L: int
 
-    def setup(self):
-        self.B = self.param("B", lecun_normal(), (self.N, 1))
-        self.C = self.param("C", lecun_normal(), (1, self.N))
-        self.step = np.exp(self.param("log_step", log_step_initializer(), (1,)))
-        self.ssm = discretize(self.A, self.B, self.C, step=self.step)
-        self.x_k_1 = self.variable("cache", "cache_x_k", np.zeros, (self.N,))
+  def setup(self):
+    self.B = self.param("B", lecun_normal(), (self.N, 1))
+    self.C = self.param("C", lecun_normal(), (1, self.N))
+    self.step = np.exp(self.param("log_step", log_step_initializer(), (1,)))
+    self.ssm = discretize(self.A, self.B, self.C, step=self.step)
+    self.x_k_1 = self.variable("cache", "cache_x_k", np.zeros, (self.N,))
 
-    def __call__(self, u):
-        x_k, y_s = scan_SSM(*self.ssm, u[:, np.newaxis], self.x_k_1.value)
-        if self.is_mutable_collection("cache"):
-           self.x_k_1.value = x_k
-        return y_s.reshape(-1).real + self.D * u
+  def __call__(self, u):
+    x_k, y_s = scan_SSM(*self.ssm, u[:, np.newaxis], self.x_k_1.value)
+    if self.is_mutable_collection("cache"):
+      self.x_k_1.value = x_k
+    return y_s.reshape(-1).real + self.D * u
 
 ```
 
@@ -601,9 +601,9 @@ class SSMRNNLayer(nn.Module):
 
 ```python
 def K_conv(Ab, Bb, Cb, L):
-    return np.array(
-        [(Cb @ matrix_power(Ab, l) @ Bb).reshape() for l in range(L)]
-    )
+  return np.array(
+    [(Cb @ matrix_power(Ab, l) @ Bb).reshape() for l in range(L)]
+  )
 ```
 
 - Main contribution of S4 is to fix this function.
@@ -613,14 +613,14 @@ def K_conv(Ab, Bb, Cb, L):
 
 ---
 
-## Two S4 Tricks 
+## Two S4 Tricks
 
-See blog post for full details. Here are two neat JAX tricks. 
+See blog post for full details. Here are two neat JAX tricks.
 
 
 - Instead of computing $\boldsymbol{\overline{K}}$ directly, S4 evaluates its **[truncated generating function](https://en.wikipedia.org/wiki/Generating_function)**.
 
-  - This becomes a functional `vmap` in JAX.  
+  - This becomes a functional `vmap` in JAX.
 
 - In order to evalute the generating function it computes a **[Cauchy kernel](https://en.wikipedia.org/wiki/Cauchy_matrix)** $\frac{1}{\omega_j - \zeta_k}$.
 
@@ -641,8 +641,8 @@ $$
 
 ```python
 def K_gen_naive(Ab, Bb, Cb, L):
-    K = K_conv(Ab, Bb, Cb, L)
-    return lambda z: np.sum(K * (z ** np.arange(L)))
+  K = K_conv(Ab, Bb, Cb, L)
+  return lambda z: np.sum(K * (z ** np.arange(L)))
 ```
 
 ---
@@ -656,9 +656,9 @@ $\Omega = \{ \exp(2\pi \frac{k}{L} : k \in [L] \}$ and inverse fourier transform
 
 ```python
 def conv_from_gen(gen, L):
-    Omega_L = np.exp((-2j * np.pi) * (np.arange(L) / L))
-    atRoots = jax.vmap(gen)(Omega_L)
-    return np.fft.ifft(atRoots, L).reshape(L).real
+  Omega_L = np.exp((-2j * np.pi) * (np.arange(L) / L))
+  atRoots = jax.vmap(gen)(Omega_L)
+  return np.fft.ifft(atRoots, L).reshape(L).real
 ```
 
 ---
@@ -667,16 +667,16 @@ def conv_from_gen(gen, L):
 
 Simplifying the generating function allows us to avoid calling `K_conv`
 $$
-\hat{\mathcal{K}}_L(z) = \sum_{i=0}^{L-1} \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^i \boldsymbol{\overline{B}} z^i = \boldsymbol{\overline{C}} (\boldsymbol{I} - \boldsymbol{\overline{A}}^L z^L) (\boldsymbol{I} - \boldsymbol{\overline{A}} z)^{-1} \boldsymbol{\overline{B}} 
+\hat{\mathcal{K}}_L(z) = \sum_{i=0}^{L-1} \boldsymbol{\overline{C}} \boldsymbol{\overline{A}}^i \boldsymbol{\overline{B}} z^i = \boldsymbol{\overline{C}} (\boldsymbol{I} - \boldsymbol{\overline{A}}^L z^L) (\boldsymbol{I} - \boldsymbol{\overline{A}} z)^{-1} \boldsymbol{\overline{B}}
 $$
 
 
 ```python
 def K_gen_inverse(Ab, Bb, Cb, L):
-    I = np.eye(Ab.shape[0])
-    Ab_L = matrix_power(Ab, L)
-    Ct = Cb @ (I - Ab_L)
-    return lambda z: (Ct.conj() @ inv(I - Ab * z) @ Bb).reshape()
+  I = np.eye(Ab.shape[0])
+  Ab_L = matrix_power(Ab, L)
+  Ct = Cb @ (I - Ab_L)
+  return lambda z: (Ct.conj() @ inv(I - Ab * z) @ Bb).reshape()
 ```
 
 ---
@@ -684,11 +684,11 @@ def K_gen_inverse(Ab, Bb, Cb, L):
 
 ### Trick 2. Exploiting Structure
 
-Under a diagonal assumption on $\mathbf{A}=\Lambda$ you can further reduce the generating function to the following kernel form, 
+Under a diagonal assumption on $\mathbf{A}=\Lambda$ you can further reduce the generating function to the following kernel form,
 
 $$ \begin{aligned}
 \boldsymbol{\hat{K}}_{\boldsymbol{\Lambda}}(z) & = c(z) \sum_i  \frac{\tilde{C}_i B_i} {(g(z) - \Lambda_{i})}  \\
- \end{aligned}$$
+\end{aligned}$$
 where $c$ is a constant, and $g$ is a function of $z$.
 
 - However the transform of this function is memory and compute-intensive.
@@ -696,7 +696,7 @@ where $c$ is a constant, and $g$ is a function of $z$.
   - $L=16,000$ different $z$, $N$ different $i$
   - Instantiating full tensor is intractable
   - Libraries like KeOps avoid this issue
-  
+
 ---
 
 ### Trick 2. Exploiting Structure
@@ -709,7 +709,7 @@ In JAX we can rely on the JIT to take care of this for us.
 ```python
 @partial(np.vectorize, signature="(c),(),(c)->()")
 def cauchy_dot(v, omega, lambd):
-    return (v / (omega - lambd)).sum()
+  return (v / (omega - lambd)).sum()
 ```
 
 - JAX `remat` handles cases of very long sequences.
@@ -762,23 +762,23 @@ Code to sample from the RNN
 
 ```python
 def sample(model, params, prime, cache, x, start, end, rng):
-    def loop(i, cur):
-        x, rng, cache = cur
-        r, rng = jax.random.split(rng)
-        out, vars = model.apply(
-            {"params": params, "cache": cache},
-            x[:, np.arange(1, 2) * i],
-            mutable=["cache"],
-        )
+  def loop(i, cur):
+    x, rng, cache = cur
+    r, rng = jax.random.split(rng)
+    out, vars = model.apply(
+      {"params": params, "cache": cache},
+      x[:, np.arange(1, 2) * i],
+      mutable=["cache"],
+    )
 
-        def update(x, out):
-            p = jax.random.categorical(r, out[0])
-            return x.at[i + 1, 0].set(p)
+    def update(x, out):
+      p = jax.random.categorical(r, out[0])
+      return x.at[i + 1, 0].set(p)
 
-        x = jax.vmap(update)(x, out)
-        return x, rng, vars["cache"].unfreeze()
+    x = jax.vmap(update)(x, out)
+    return x, rng, vars["cache"].unfreeze()
 
-    return jax.lax.fori_loop(start, end, loop, (x, rng, cache))[0]
+  return jax.lax.fori_loop(start, end, loop, (x, rng, cache))[0]
 ```
 
 ---
@@ -871,7 +871,7 @@ def sample(model, params, prime, cache, x, start, end, rng):
 
 - JAX JIT makes some hard code trivial.
 
-- Lifting in Flax 
+- Lifting in Flax
 
 
 ---
@@ -884,26 +884,26 @@ def sample(model, params, prime, cache, x, start, end, rng):
 ```python
 # Replaces Part 2.
 def complex_softmax(x, eps=1e-7):
-    def reciprocal(x):
-        return x.conj() / (x * x.conj() + eps)
+  def reciprocal(x):
+    return x.conj() / (x * x.conj() + eps)
 
-    x2 = x - x[np.argmax(x.real)]
-    e = np.exp(x2)
-    return e * reciprocal(np.sum(e))
+  x2 = x - x[np.argmax(x.real)]
+  e = np.exp(x2)
+  return e * reciprocal(np.sum(e))
 
 def dss_kernel(W, Lambda, L, step):
-    P = (step * Lambda)[:, None] * np.arange(L)
-    S = jax.vmap(complex_softmax)(P)
-    return ((W / Lambda) @ S).ravel().real
+  P = (step * Lambda)[:, None] * np.arange(L)
+  S = jax.vmap(complex_softmax)(P)
+  return ((W / Lambda) @ S).ravel().real
 
 def dss_ssm(W, Lambda, L, step):
-    N = Lambda.shape[0]
-    Abar = np.diag(np.exp(Lambda * step))
-    b = jax.vmap(lambda l:
-                 1 / (l * (np.exp(l * np.arange(L) * step)).sum()))
-    Bbar = b(Lambda).reshape(N, 1)
-    Cbar = W.reshape(1, N)
-    return (Abar, Bbar, Cbar)
+  N = Lambda.shape[0]
+  Abar = np.diag(np.exp(Lambda * step))
+  b = jax.vmap(lambda l:
+               1 / (l * (np.exp(l * np.arange(L) * step)).sum()))
+  Bbar = b(Lambda).reshape(N, 1)
+  Cbar = W.reshape(1, N)
+  return (Abar, Bbar, Cbar)
 ```
 
 

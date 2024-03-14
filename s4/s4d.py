@@ -1,6 +1,6 @@
 # <center>
 # <h1>
-# Diagonal State Space Models  
+# Diagonal State Space Models
 # (The Annotated S4D)
 # </h1>
 # </center>
@@ -63,7 +63,7 @@ from .s4 import (
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rng = jax.random.PRNGKey(1)
 
 
@@ -325,17 +325,20 @@ if __name__ == '__main__':
 # As with all SSMs, the first step is to discretize the parameters with a step size $\Delta$. [**Link to Post 1**]
 # This is much simpler for diagonal state matrices $\boldsymbol{A}$, as the discretizations normally involves matrix inverses or exponentials that can be broken up into scalar operations.
 
+
 def discretize(A, B, step, mode="zoh"):
     if mode == "bilinear":
-        num, denom = 1 + .5 * step*A, 1 - .5 * step*A
+        num, denom = 1 + 0.5 * step * A, 1 - 0.5 * step * A
         return num / denom, step * B / denom
     elif mode == "zoh":
-        return np.exp(step*A), (np.exp(step*A)-1)/A * B
+        return np.exp(step * A), (np.exp(step * A) - 1) / A * B
+
 
 # Here we show both the Bilinear method used in S4 and HiPPO, and the ZOH method used in other SSMs such as DSS and [LMU](https://papers.nips.cc/paper/2019/hash/952285b9b7e7a1be5aa7849f32ffff05-Abstract.html).
 # These are closely related, and the paper ablates that they are interchangeable and have no real empirical difference.
 
 # As described in the original paper, the kernel in the diagonal case is just a single **Vandermonde matrix-vector product**. This is almost trivial to implement and can be applied to *any discretization* of a diagonal SSM.
+
 
 def vandermonde_product(v, alpha, L):
     V = alpha[:, np.newaxis] ** np.arange(L)  # Vandermonde matrix
@@ -355,7 +358,9 @@ def s4d_kernel(C, A, L, step):
 
 @partial(jax.jit, static_argnums=2)
 def s4d_kernel_zoh(C, A, L, step):
-    kernel_l = lambda l: (C * (np.exp(step*A)-1)/A * np.exp(l*step*A)).sum()
+    kernel_l = lambda l: (
+        C * (np.exp(step * A) - 1) / A * np.exp(l * step * A)
+    ).sum()
     return jax.vmap(kernel_l)(np.arange(L)).real
 
 
@@ -397,7 +402,8 @@ def test_conversion(N=8, L=16):
     )
     assert np.allclose(y1, y2.reshape(-1).real, atol=1e-4, rtol=1e-4)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_conversion()
 
 # ### Comparing SSM Parameterizations and Efficiency
@@ -421,7 +427,7 @@ if __name__ == '__main__':
 # DSS found that *truncating S4's matrix to be diagonal* was still empirically effective, and introduced a simple method to take advantage of diagonal SSMs.
 # Beyond the choice of diagonal vs DPLR, its parameterization differs from S4's in several ways.
 # Most notably, it introduces a **complex softmax** which is specialized to the ZOH discretization and normalizes over the sequence length. These differences were subsequently ablated by S4D which found slight improvements with S4's original parameterization.
-# 
+#
 # <!--
 # This was introduced to potentially stabilize the case when $\boldsymbol{A}$ can have positive eigenvalues, but has some disadvantages including being somewhat more complicated and less efficient, and calibrated only to a particular sequence length.
 # -->
@@ -472,11 +478,20 @@ class S4DLayer(nn.Module):
             self.A_re = self.param("A_re", init_A_re, (self.N,))
             self.A_im = self.param("A_im", init_A_im, (self.N,))
         elif self.scaling == "linear":
-            self.A_re = self.param("A_re", nn.initializers.constant(-0.5), (self.N,))
+            self.A_re = self.param(
+                "A_re", nn.initializers.constant(-0.5), (self.N,)
+            )
+
             def arange_initializer(scale):
-                return lambda key, shape: scale * np.ones(shape) * np.arange(shape[-1])
+                return (
+                    lambda key, shape: scale
+                    * np.ones(shape)
+                    * np.arange(shape[-1])
+                )
+
             self.A_im = self.param("A_im", arange_initializer(np.pi), (self.N,))
-        else: raise NotImplementedError
+        else:
+            raise NotImplementedError
         self.A = np.clip(self.A_re, None, -1e-4) + 1j * self.A_im
         self.B_re = self.param("B_re", nn.initializers.ones, (self.N,))
         self.B_im = self.param("B_im", nn.initializers.zeros, (self.N,))
